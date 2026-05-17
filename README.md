@@ -1,98 +1,205 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Google Wallet Passes — NestJS
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST para crear y gestionar pases de Google Wallet. Implementa el flujo B1 (pre-created objects), lo que permite actualizar la información del pase en tiempo real después de que el usuario lo haya guardado.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Requisitos previos
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### 1. Cuenta de Issuer en Google Wallet
 
-## Project setup
+1. Ve a [pay.google.com/business/console](https://pay.google.com/business/console)
+2. Crea tu cuenta de Issuer — te asigna un **Issuer ID** (número largo tipo `1234567890123456789`)
+3. Completa el perfil de empresa
+4. Las cuentas nuevas inician en **modo demo** — solo puedes emitir pases a cuentas de prueba. Para producción debes solicitar *publishing access*
 
-```bash
-$ npm install
-```
+### 2. Proyecto en Google Cloud
 
-## Compile and run the project
+1. Ve a [console.cloud.google.com](https://console.cloud.google.com)
+2. Crea un proyecto nuevo
+3. Habilita la **Google Wallet API** (también llamada *Google Pay for Passes API*)
+4. Ve a **IAM & Admin → Service Accounts** y crea una Service Account
+5. En la pestaña **Claves**, genera una clave de tipo JSON y descárgala — este archivo es tu llave de acceso
+
+### 3. Vincular la Service Account al Issuer
+
+1. Vuelve al panel de Google Wallet → **Usuarios**
+2. Agrega el `client_email` del JSON descargado con rol **Desarrollador**
+
+---
+
+## Instalación
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
+### Dependencias clave
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm install google-auth-library jsonwebtoken @nestjs/config
+npm install -D @types/jsonwebtoken
 ```
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Configuración
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Crea un archivo `.env` en la raíz:
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```env
+GOOGLE_WALLET_ISSUER_ID=tu_issuer_id
+GOOGLE_WALLET_CLASS_SUFFIX=mi_pase_v1
+GOOGLE_APPLICATION_CREDENTIALS=./secrets/wallet-service-account.json
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Crea la carpeta `secrets/` y mueve ahí el JSON descargado de Google Cloud.
 
-## Resources
+> ⚠️ Agrega `secrets/` al `.gitignore`. Nunca subas este archivo al repositorio.
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Conceptos clave
 
-## Support
+### Pass Class vs Pass Object
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+| Concepto | Descripción |
+|---|---|
+| **Pass Class** | Plantilla compartida. Se crea una sola vez. Define el estilo y estructura base del pase |
+| **Pass Object** | Instancia individual por usuario. Referencia a una Class y contiene los datos específicos del usuario |
 
-## Stay in touch
+### Flujo B1 (Pre-created Object)
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```
+Crear Pass Class (una vez)
+        ↓
+Crear Pass Object por usuario
+        ↓
+Firmar JWT con el objectId
+        ↓
+Entregar link "Add to Google Wallet" al usuario
+        ↓
+Actualizar Pass Object cuando haya cambios
+→ el pase se sincroniza automáticamente en el dispositivo del usuario
+```
 
-## License
+### JWT de emisión
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Para entregar el pase al usuario se firma un JWT con la `private_key` de la Service Account. El payload tiene esta estructura:
+
+```json
+{
+  "iss": "client_email de la service account",
+  "aud": "google",
+  "origins": ["https://tudominio.com"],
+  "typ": "savetowallet",
+  "payload": {
+    "genericObjects": [{ "id": "ISSUER_ID.user_USERID" }]
+  }
+}
+```
+
+El link final es: `https://pay.google.com/gp/v/save/{JWT}`
+
+---
+
+## Endpoints
+
+### `POST /wallet/class`
+Crea la Pass Class (plantilla). Ejecutar una sola vez al hacer setup.
+
+Si la clase ya existe, la retorna sin crear duplicado.
+
+---
+
+### `POST /wallet/pass`
+Crea un Pass Object para un usuario.
+
+**Body:**
+```json
+{
+  "userId": "u001",
+  "holderName": "Juan Pérez",
+  "eventName": "DevFest Medellín 2026",
+  "eventDate": "2026-10-15T18:00:00Z",
+  "seat": "A-12"
+}
+```
+
+**Respuesta:** el objeto creado en Google Wallet.
+
+---
+
+### `GET /wallet/pass/:userId/link`
+Genera el link "Add to Google Wallet" para un usuario.
+
+**Respuesta:** `https://pay.google.com/gp/v/save/{JWT}`
+
+El usuario abre este link en el navegador y puede guardar el pase en su wallet.
+
+---
+
+### `PATCH /wallet/pass`
+Actualiza los datos de un pase existente. El cambio se refleja automáticamente en el dispositivo del usuario sin que tenga que hacer nada.
+
+**Body:** (todos los campos son opcionales excepto `userId`)
+```json
+{
+  "userId": "u001",
+  "seat": "B-07",
+  "eventName": "Nuevo nombre del evento",
+  "state": "INACTIVE"
+}
+```
+
+Estados válidos: `ACTIVE`, `INACTIVE`, `EXPIRED`
+
+---
+
+### `PATCH /wallet/pass/:userId/expire`
+Marca el pase como expirado.
+
+---
+
+## Estructura del proyecto
+
+```
+src/
+└── wallet/
+    ├── wallet.module.ts
+    ├── wallet.service.ts      ← lógica de Google Wallet API
+    ├── wallet.controller.ts   ← endpoints HTTP
+    └── dto/
+        ├── create-pass.dto.ts
+        └── update-pass.dto.ts
+secrets/
+└── wallet-service-account.json   ← NO subir al repo
+```
+
+---
+
+## IDs en Google Wallet
+
+Todos los IDs siguen el formato `ISSUER_ID.SUFFIX`:
+
+| Recurso | Formato | Ejemplo |
+|---|---|---|
+| Pass Class | `ISSUER_ID.CLASS_SUFFIX` | `1234567890123456789.mi_pase_v1` |
+| Pass Object | `ISSUER_ID.user_USERID` | `1234567890123456789.user_u001` |
+
+---
+
+## Modo demo vs Producción
+
+En **modo demo** los pases muestran la etiqueta `[SOLO PARA PRUEBAS]` y solo pueden ser guardados por cuentas configuradas como cuentas de prueba en el panel.
+
+Para pasar a producción: Google Pay & Wallet Console → **Solicitar acceso para publicar**. El proceso toma 1-2 días hábiles.
+
+---
+
+## Referencias
+
+- [Google Wallet API Docs](https://developers.google.com/wallet/generic)
+- [REST API Reference](https://developers.google.com/wallet/generic/rest)
+- [Google Pay & Wallet Console](https://pay.google.com/business/console)
+- [Google Cloud Console](https://console.cloud.google.com)
